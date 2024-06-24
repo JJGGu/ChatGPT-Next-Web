@@ -106,11 +106,13 @@ Parameters:
     AssociationPropertyMetadata:
       VpcId: VpcId
       ZoneId: ZoneId
-  AdminPassword:
+  ApiKey:
     Type: String
-    AssociationProperty: ALIYUN::ECS::Instance::Password
-    Label: 管理员密码
+    Label: ApiKey
     NoEcho: True
+  Code:
+    Type: String
+    Label: Code
 Resources:
   SecurityGroup:
     Type: ALIYUN::ECS::SecurityGroup
@@ -170,11 +172,17 @@ Resources:
             # 源代码通过computenest-cli被打包为tar.gz包，并发布为部署物
             wget '{{ computenest::file::JJGGu_ChatGPT-Next-Web }}' -O JJGGu_ChatGPT-Next-Web.tar.gz
             tar -zxvf JJGGu_ChatGPT-Next-Web.tar.gz && cd "$(tar -tzf JJGGu_ChatGPT-Next-Web.tar.gz | head -1 | awk -F'/' '{print $1}')"
+            yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+            yum makecache fast
+            yum -y install docker-ce jq
+            systemctl enable docker
+            systemctl start docker
+            
             docker pull yidadaa/chatgpt-next-web
             
             docker run -d -p 3000:3000 \
-               -e OPENAI_API_KEY=sk-xxxx \
-               -e CODE=asdf123- \
+               -e OPENAI_API_KEY=${ApiKey} \
+               -e CODE=${Code} \
                yidadaa/chatgpt-next-web
 
             ARGUS_VERSION=3.5.7 /bin/bash -c "$(curl -sS https://cms-agent-${RegionId}.oss-${RegionId}-internal.aliyuncs.com/Argus/agent_install_ecs-1.7.sh)" >> /root/install_cms_agent.log 2>&1
@@ -215,7 +223,8 @@ Metadata:
         Label:
           default: 可用区配置
       - Parameters:
-          - AdminPassword
+          - ApiKey
+          - Code
         Label:
           en: Software Configuration
           zh-cn: 软件配置
